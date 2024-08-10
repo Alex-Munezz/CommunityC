@@ -8,6 +8,9 @@ import SignUp from './components/SignUp';
 import BookingPage from './components/BookingPage';
 import BookedServicePage from './components/BookedServicePage';
 import CheckOut from './components/Checkout';
+import AboutUs from './components/AboutUs';
+import ContactUs from './components/ContactUs';
+
 function App() {
   return (
     <Router>
@@ -19,6 +22,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/checkout" element={<CheckOut />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contacts" element={<ContactUs />} />
             <Route path="/book/:name" element={<BookingPage />} />
             <Route path="/booked-service" element={<BookedServicePage />} />
           </Routes>

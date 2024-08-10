@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import logo from '../images/logo.png'
+import { Link, useLocation } from 'react-router-dom';
+import logo from '../images/logo.png';
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  
+  const location = useLocation();
+
+  const getLinkClassName = (path) => 
+    `text-gray-300 hover:text-white ${location.pathname === path ? 'hidden' : ''}`;
+
   return (
     <nav className="bg-gray-800 p-4">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to='/'><img src={logo} alt='logo' className='h-14' /></Link>
+        <Link to="/">
+          <img src={logo} alt="logo" className="h-14" />
+        </Link>
         <div className="hidden md:flex space-x-4">
-          <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
-          <Link to="/cart" className="text-gray-300 hover:text-white">Cart</Link>
-          <Link to="/login" className="text-gray-300 hover:text-white">Login</Link>
-          <Link to="/signup" className="text-gray-300 hover:text-white">Sign Up</Link>
+          <Link to="/" className={getLinkClassName("/")}>Home</Link>
+          <Link to="/login" className={getLinkClassName("/login")}>Login</Link>
+          <Link to="/signup" className={getLinkClassName("/signup")}>Sign Up</Link>
+          <Link to="/about" className={getLinkClassName("/about")}>About Us</Link>
+          <Link to="/contacts" className={getLinkClassName("/contacts")}>Contact Us</Link>
         </div>
         <div className="md:hidden">
           <button onClick={() => setIsOpen(!isOpen)} className="text-white focus:outline-none">
@@ -24,11 +32,11 @@ const Navbar = () => {
       </div>
       {isOpen && (
         <div className="md:hidden bg-gray-700 p-4 space-y-4">
-          <Link to="/" className="block text-gray-300 hover:text-white">Home</Link>
-          <Link to="/services" className="block text-gray-300 hover:text-white">Services</Link>
-          <Link to="/cart" className="block text-gray-300 hover:text-white">Cart</Link>
-          <Link to="/login" className="block text-gray-300 hover:text-white">Login</Link>
-          <Link to="/signup" className="block text-gray-300 hover:text-white">Sign Up</Link>
+          <Link to="/" className={`block text-gray-300 hover:text-white ${location.pathname === "/" ? 'hidden' : ''}`}>Home</Link>
+          <Link to="/services" className={`block text-gray-300 hover:text-white ${location.pathname === "/about" ? 'hidden' : ''}`}>About Us</Link>
+          <Link to="/cart" className={`block text-gray-300 hover:text-white ${location.pathname === "/contacts" ? 'hidden' : ''}`}>Contact US</Link>
+          <Link to="/login" className={`block text-gray-300 hover:text-white ${location.pathname === "/login" ? 'hidden' : ''}`}>Login</Link>
+          <Link to="/signup" className={`block text-gray-300 hover:text-white ${location.pathname === "/signup" ? 'hidden' : ''}`}>Sign Up</Link>
         </div>
       )}
     </nav>
