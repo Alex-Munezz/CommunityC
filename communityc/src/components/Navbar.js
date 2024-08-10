@@ -33,8 +33,8 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden bg-gray-700 p-4 space-y-4">
           <Link to="/" className={`block text-gray-300 hover:text-white ${location.pathname === "/" ? 'hidden' : ''}`}>Home</Link>
-          <Link to="/services" className={`block text-gray-300 hover:text-white ${location.pathname === "/about" ? 'hidden' : ''}`}>About Us</Link>
-          <Link to="/cart" className={`block text-gray-300 hover:text-white ${location.pathname === "/contacts" ? 'hidden' : ''}`}>Contact US</Link>
+          <Link to="/about" className={`block text-gray-300 hover:text-white ${location.pathname === "/about" ? 'hidden' : ''}`}>About Us</Link>
+          <Link to="/contacts" className={`block text-gray-300 hover:text-white ${location.pathname === "/contacts" ? 'hidden' : ''}`}>Contact US</Link>
           <Link to="/login" className={`block text-gray-300 hover:text-white ${location.pathname === "/login" ? 'hidden' : ''}`}>Login</Link>
           <Link to="/signup" className={`block text-gray-300 hover:text-white ${location.pathname === "/signup" ? 'hidden' : ''}`}>Sign Up</Link>
         </div>
