@@ -10,7 +10,6 @@ const Navbar = () => {
         <Link to='/'><img src={logo} alt='logo' className='h-14' /></Link>
         <div className="hidden md:flex space-x-4">
           <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
-          <Link to="/services" className="text-gray-300 hover:text-white">Services</Link>
           <Link to="/cart" className="text-gray-300 hover:text-white">Cart</Link>
           <Link to="/login" className="text-gray-300 hover:text-white">Login</Link>
           <Link to="/signup" className="text-gray-300 hover:text-white">Sign Up</Link>

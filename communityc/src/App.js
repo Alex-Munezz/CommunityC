@@ -5,11 +5,9 @@ import Footer from './components/Footer';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
-import Services from './components/Services';
-import Cart from './components/Cart';
 import BookingPage from './components/BookingPage';
 import BookedServicePage from './components/BookedServicePage';
-
+import CheckOut from './components/Checkout';
 function App() {
   return (
     <Router>
@@ -20,10 +18,9 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
-            <Route path="/services" element={<Services />} />
-            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<CheckOut />} />
             <Route path="/book/:name" element={<BookingPage />} />
-            <Route path="/booked-service/:name" element={<BookedServicePage />} />
+            <Route path="/booked-service" element={<BookedServicePage />} />
           </Routes>
         </div>
         <Footer />
