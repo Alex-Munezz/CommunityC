@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../images/logo.png';
+import { useAuth } from './AuthContext'; // Adjust the import path
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { isAuthenticated, logout } = useAuth(); // Use the auth context
 
-  const getLinkClassName = (path) => 
-    `text-gray-300 hover:text-white ${location.pathname === path ? 'hidden' : ''}`;
+  const handleSignOut = () => {
+    logout(); 
+  };
 
   return (
     <nav className="bg-gray-800 p-4">
@@ -16,11 +19,17 @@ const Navbar = () => {
           <img src={logo} alt="logo" className="h-14" />
         </Link>
         <div className="hidden md:flex space-x-4">
-          <Link to="/" className={getLinkClassName("/")}>Home</Link>
-          <Link to="/login" className={getLinkClassName("/login")}>Login</Link>
-          <Link to="/signup" className={getLinkClassName("/signup")}>Sign Up</Link>
-          <Link to="/about" className={getLinkClassName("/about")}>About Us</Link>
-          <Link to="/contacts" className={getLinkClassName("/contacts")}>Contact Us</Link>
+          <Link to="/" className="text-gray-300 hover:text-white">Home</Link>
+          {!isAuthenticated ? (
+            <>
+              <Link to="/login" className="text-gray-300 hover:text-white">Login</Link>
+              <Link to="/signup" className="text-gray-300 hover:text-white">Sign Up</Link>
+            </>
+          ) : (
+            <button onClick={handleSignOut} className="text-gray-300 hover:text-white">Sign Out</button>
+          )}
+          <Link to="/about" className="text-gray-300 hover:text-white">About Us</Link>
+          <Link to="/contacts" className="text-gray-300 hover:text-white">Contact Us</Link>
         </div>
         <div className="md:hidden">
           <button onClick={() => setIsOpen(!isOpen)} className="text-white focus:outline-none">
@@ -32,11 +41,17 @@ const Navbar = () => {
       </div>
       {isOpen && (
         <div className="md:hidden bg-gray-700 p-4 space-y-4">
-          <Link to="/" className={`block text-gray-300 hover:text-white ${location.pathname === "/" ? 'hidden' : ''}`}>Home</Link>
-          <Link to="/about" className={`block text-gray-300 hover:text-white ${location.pathname === "/about" ? 'hidden' : ''}`}>About Us</Link>
-          <Link to="/contacts" className={`block text-gray-300 hover:text-white ${location.pathname === "/contacts" ? 'hidden' : ''}`}>Contact US</Link>
-          <Link to="/login" className={`block text-gray-300 hover:text-white ${location.pathname === "/login" ? 'hidden' : ''}`}>Login</Link>
-          <Link to="/signup" className={`block text-gray-300 hover:text-white ${location.pathname === "/signup" ? 'hidden' : ''}`}>Sign Up</Link>
+          <Link to="/" className="block text-gray-300 hover:text-white">Home</Link>
+          {!isAuthenticated ? (
+            <>
+              <Link to="/login" className="block text-gray-300 hover:text-white">Login</Link>
+              <Link to="/signup" className="block text-gray-300 hover:text-white">Sign Up</Link>
+            </>
+          ) : (
+            <button onClick={handleSignOut} className="block text-gray-300 hover:text-white">Sign Out</button>
+          )}
+          <Link to="/about" className="block text-gray-300 hover:text-white">About Us</Link>
+          <Link to="/contacts" className="block text-gray-300 hover:text-white">Contact Us</Link>
         </div>
       )}
     </nav>

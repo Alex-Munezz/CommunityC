@@ -10,17 +10,19 @@ import BookedServicePage from './components/BookedServicePage';
 import CheckOut from './components/Checkout';
 import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
+import { useAuth } from './components/AuthContext'; 
 
 function App() {
+  const { isAuthenticated } = useAuth();
   return (
-    <Router>
+    
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <div className="flex-grow">
           <Routes>
             <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/login" element={!isAuthenticated ? <Login /> : <LandingPage />} />
+            <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <LandingPage />} />
             <Route path="/checkout" element={<CheckOut />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contacts" element={<ContactUs />} />
@@ -30,7 +32,7 @@ function App() {
         </div>
         <Footer />
       </div>
-    </Router>
+    
   );
 }
 

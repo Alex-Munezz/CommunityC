@@ -1,45 +1,147 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import plumbing from '../images/image1.jpeg';
-import electrician from '../images/image2.jpg';
-import chauffer from '../images/image8.jpg';
-import braiding from '../images/image5.webp';
-import cleaning from '../images/image3.jpg'; 
-import gardening from '../images/gardening.png'; 
-import pestControl from '../images/pest.png';
-import tutoring from '../images/image7.jpg'; 
-import autoRepair from '../images/autorepair.png'; 
-
-const services = [
-  { id: 1, name: 'Plumbing', description: 'Fix your plumbing issues.', image: plumbing },
-  { id: 2, name: 'Electrician', description: 'Electrical services for your home.', image: electrician },
-  { id: 3, name: 'Chauffeur', description: 'Hire a professional driver.', image: chauffer },
-  { id: 4, name: 'Braiding', description: 'Braiding services for your hair.', image: braiding },
-  { id: 5, name: 'Cleaning', description: 'House cleaning, carpet cleaning, and more.', image: cleaning },
-  { id: 6, name: 'Gardening', description: 'Lawn care, garden design, and maintenance.', image: gardening },
-  { id: 7, name: 'Pest Control', description: 'Termite treatment and general pest removal.', image: pestControl },
-  { id: 8, name: 'Tutoring', description: 'Personalized tutoring in various subjects.', image: tutoring },
-  { id: 10, name: 'Auto Repair', description: 'Car maintenance, diagnostics, and repair.', image: autoRepair },
-];
+import { useAuth } from './AuthContext';
 
 function LandingPage() {
+  const [services, setServices] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showPopup, setShowPopup] = useState(true);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
-  const handleBookService = (service) => {
-    navigate(`/book/${service.name}`);
+  useEffect(() => {
+    const fetchServicesAndCategories = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/services');
+        if (!response.ok) {
+          throw new Error('Failed to fetch services');
+        }
+
+        const data = await response.json();
+        
+        if (data && Array.isArray(data.services)) {
+          setServices(data.services);
+        }
+
+        if (data && Array.isArray(data.categories)) {
+          setCategories(data.categories);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchServicesAndCategories();
+  }, []);
+
+  useEffect(() => {
+    if (showPopup) {
+      const timer = setTimeout(() => {
+        setShowPopup(false);
+      }, 5000); // 10 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [showPopup]);
+
+  const handleCategoryChange = (e) => {
+    const { value } = e.target;
+    setSelectedCategories(prevCategories =>
+      prevCategories.includes(value)
+        ? prevCategories.filter(cat => cat !== value)
+        : [...prevCategories, value]
+    );
   };
 
+  const handleBookService = (service) => {
+    if (isAuthenticated) {
+      navigate(`/book/${service.name}`);
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const filteredServices = selectedCategories.length
+    ? services.filter(service => selectedCategories.includes(service.category))
+    : services;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="spinner-border animate-spin inline-block w-8 h-8 border-4 rounded-full border-blue-500 border-t-transparent"></div>
+          <p className="mt-4 text-gray-700">Loading services...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-center mt-4 text-red-600">Error: {error}</div>;
+  }
+
   return (
-    <div>
-      <header className="bg-blue-500 text-white text-center py-16">
-        <h1 className="text-4xl font-bold">Welcome to CommunityCrafters</h1>
-        <p className="mt-4">Find the best local services for your needs.</p>
+    <div className="bg-gradient-to-r from-black via-blue-500 to-gray-200 relative">
+      {/* Popup Component */}
+      {/* {showPopup && (
+        <div className="fixed top-0 left-0 w-full bg-white shadow-lg p-4 z-50">
+          <div className="relative">
+            <p className="text-lg font-bold text-red-600">
+            !!! This app is still under development. We're working hard to finish it so please do not make any payment for any service !!!
+            </p>
+            <button
+              onClick={() => setShowPopup(false)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )} */}
+
+      <header className="text-center py-16">
+        <h1 className="text-4xl text-white font-bold font-serif">Welcome to CommunityCrafters</h1>
+        <p className="mt-4 text-2xl text-white">Find the best local services for your needs.</p>
       </header>
       
       <div className="container mx-auto py-8">
-        <h2 className="text-2xl font-semibold text-center mb-6">Services We Provide</h2>
+        <h2 className="text-3xl font-serif text-center text-white mb-6">Services We Provide :</h2>
+
+        {/* Category Selection */}
+        <div className="container mx-auto py-8">
+          <div className="bg-gray-100 p-6 rounded-lg shadow-lg">
+            <h3 className="text-2xl font-bold text-blue-600 mb-4 text-center">Filter by Category</h3>
+            <div className="flex flex-wrap justify-center gap-6">
+              {categories.map(category => (
+                <label
+                  key={category}
+                  className="flex items-center space-x-2 p-4 bg-white rounded-lg shadow-lg transition-transform transform hover:scale-105 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    value={category}
+                    checked={selectedCategories.includes(category)}
+                    onChange={handleCategoryChange}
+                    className="form-checkbox h-5 w-5 text-blue-500 transition duration-150 ease-in-out"
+                  />
+                  <span className="text-lg font-medium text-gray-800">{category}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {services.map(service => (
+          {filteredServices.map(service => (
             <div key={service.id} className="bg-white shadow-md rounded-lg overflow-hidden">
               <img src={service.image} alt={service.name} className="w-full h-48 object-cover" />
               <div className="p-4">
