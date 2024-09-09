@@ -11,6 +11,7 @@ import CheckOut from './components/Checkout';
 import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import { useAuth } from './components/AuthContext'; 
+import AdminDashboard from './components/AdminDashboard';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -28,6 +29,7 @@ function App() {
             <Route path="/contacts" element={<ContactUs />} />
             <Route path="/book/:name" element={<BookingPage />} />
             <Route path="/booked-service" element={<BookedServicePage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           </Routes>
         </div>
         <Footer />

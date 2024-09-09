@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import '../App.css';
 
 const BookingPage = () => {
-  const { name } = useParams(); // Assuming you pass the service name in the URL
+  const { name } = useParams();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,18 +13,19 @@ const BookingPage = () => {
     date: '',
     time: '',
     additionalInfo: '',
-    serviceType: '', // New field for type of service
-    price: 0, // New field for calculated price
+    serviceType: '',
+    price: 0,
   });
 
-  const [servicePricing, setServicePricing] = useState({}); // State to store pricing info
-
+  const [servicePricing, setServicePricing] = useState({});
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
   const fetchServicePricing = async () => {
     try {
       const response = await fetch(`http://127.0.0.1:5000/service-pricing?service_name=${formData.service_name}`);
       if (!response.ok) throw new Error('Failed to fetch pricing info');
       const data = await response.json();
-      setServicePricing(data); // Store pricing info
+      setServicePricing(data);
     } catch (err) {
       console.error(err.message);
     }
@@ -51,31 +52,60 @@ const BookingPage = () => {
       ...prevData,
       [name]: value,
     }));
+    setError(''); // Clear the error when form changes
   };
 
-  const navigate = useNavigate();
+  const validateDateAndTime = () => {
+    const selectedDate = new Date(formData.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset today's time to 00:00:00
 
-  const handleSubmit = async (bookingDetails) => {
+    if (selectedDate < today) {
+      return 'You cannot book a past date.';
+    }
+
+    if (selectedDate.getTime() === today.getTime()) {
+      return 'You cannot book for today. Please choose a future date.';
+    }
+
+    const selectedTime = formData.time;
+    const selectedHours = parseInt(selectedTime.split(':')[0], 10);
+
+    if (selectedHours < 7 || selectedHours >= 20) {
+      return 'Booking is only allowed between 7:00 AM and 8:00 PM.';
+    }
+
+    return ''; // No validation errors
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const validationError = validateDateAndTime();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     try {
-      // Assuming you get the price from the bookingDetails
-      const price = bookingDetails.price;
-      
-      // Save the price to localStorage
+      const price = formData.price;
       localStorage.setItem('booking_price', price);
-      
-      // Redirect to checkout page
       navigate('/checkout');
     } catch (error) {
       console.error('Error setting booking price:', error);
     }
   };
-  
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Book {formData.service_name}</h1>
         <form className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200" onSubmit={handleSubmit}>
+          {error && (
+            <div className="bg-red-100 text-red-800 p-4 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
           <div className="mb-6">
             <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="name">
               Full Name

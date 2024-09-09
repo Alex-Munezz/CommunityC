@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 const CheckoutPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [price, setPrice] = useState(null); // Add state for price
-  const [error, setError] = useState(null); // Add state for error handling
+  const [price, setPrice] = useState(null); // State for the price
+  const [error, setError] = useState(null); // State for error handling
   const navigate = useNavigate();
 
-  // Fetch the price from localStorage or state
+  // Fetch the price from localStorage when the component mounts
   useEffect(() => {
     const fetchedPrice = localStorage.getItem('booking_price');
     if (fetchedPrice) {
@@ -94,6 +94,16 @@ const CheckoutPage = () => {
               onChange={handlePhoneNumberChange}
               placeholder="e.g., 0701234567"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500"
+            />
+          </div>
+          <div className="mb-6">
+            <label htmlFor="price" className="block text-gray-600 mb-2">Price (Kshs)</label>
+            <input
+              type="text"
+              id="price"
+              value={price ? price.toFixed(2) : 'Loading...'} // Display price or loading
+              readOnly
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100"
             />
           </div>
           <button
