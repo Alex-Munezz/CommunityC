@@ -11,9 +11,10 @@ const ConfirmationPage = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-3xl font-extrabold text-green-600 mb-6 text-center">Booking Confirmed</h1>
+        <h1 className="text-3xl font-extrabold text-green-600 mb-6 text-center">Booking Submitted</h1>
         <p className="text-gray-700 mb-6 text-center">
-          Your booking has been successfully completed. A confirmation email will be sent to you shortly.
+          Your booking has been successfully submitted. A booking confirmation email will be sent to you shortly. If there is a change in price you will also be notified along with the email and the payment details. 
+          Thank you for choosing CommunityCrafters.
         </p>
         <button
           onClick={handleGoBack}

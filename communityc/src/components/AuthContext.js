@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
+    console.log('Retrieved token:', token);
     const expiry = localStorage.getItem('token_expiry');
     
     if (token && expiry && new Date(expiry) > new Date()) {

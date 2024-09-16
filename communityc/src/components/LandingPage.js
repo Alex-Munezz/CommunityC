@@ -148,10 +148,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { Database } from '@sqlitecloud/drivers';
-
-// Initialize the database outside of the component
-const db = new Database("sqlitecloud://clj1pf36iz.sqlite.cloud:8860/communityc.db?apikey=KnYAQAyLUDj36ZRvEhaBfrK52ZQwDba9YiabBQJalb8");
 
 function LandingPage() {
   const [services, setServices] = useState([]);
@@ -159,52 +155,35 @@ function LandingPage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showPopup, setShowPopup] = useState(true);
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    const fetchServicesAndCategories = async () => {
-      try {
-        // Fetch all services from the database
-        const servicesResult = await db.sql`SELECT * FROM service;`;
-        console.log('Services result:', servicesResult); // Log the services response
-
-        // Fetch distinct categories from services
-        const categoriesResult = await db.sql`SELECT DISTINCT category FROM service;`;
-        console.log('Categories result:', categoriesResult); // Log the categories response
-
-        // Update state with fetched services
-        if (servicesResult && Array.isArray(servicesResult)) {
-          setServices(servicesResult);
-        }
-
-        // Extract categories from the result and update state
-        if (categoriesResult && Array.isArray(categoriesResult)) {
-          const categoriesList = categoriesResult.map(item => item.category);
-          setCategories(categoriesList);
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message || 'An unexpected error occurred.');
-        setLoading(false);
-      }
-    };
-
-    fetchServicesAndCategories();
-  }, []);
-
-  useEffect(() => {
-    if (showPopup) {
-      const timer = setTimeout(() => {
-        setShowPopup(false);
-      }, 5000); // 5 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [showPopup]);
+        const fetchServicesAndCategories = async () => {
+          try {
+            const response = await fetch('http://127.0.0.1:5000/services');
+            if (!response.ok) {
+              throw new Error('Failed to fetch services');
+            }
+    
+            const data = await response.json();
+            
+            if (data && Array.isArray(data.services)) {
+              setServices(data.services);
+            }
+    
+            if (data && Array.isArray(data.categories)) {
+              setCategories(data.categories);
+            }
+    
+            setLoading(false);
+          } catch (err) {
+            setError(err.message);
+            setLoading(false);
+          }
+        };
+        fetchServicesAndCategories();
+          }, []);
 
   const handleCategoryChange = (e) => {
     const { value } = e.target;
@@ -244,13 +223,6 @@ function LandingPage() {
 
   return (
     <div className="bg-gradient-to-r from-black via-blue-500 to-gray-200 relative">
-      {/* Popup Notification */}
-      {showPopup && (
-        <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-center py-2">
-          <p>Welcome to CommunityCrafters!</p>
-        </div>
-      )}
-
       <header className="text-center py-16">
         <h1 className="text-4xl text-white font-bold font-serif">Welcome to CommunityCrafters</h1>
         <p className="mt-4 text-2xl text-white">Find the best local services for your needs.</p>

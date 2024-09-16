@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import logo from '../images/logo.png';
-import { useAuth } from './AuthContext'; // Adjust the import path
+import { useAuth } from './AuthContext'; // Ensure the path is correct
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
   const { isAuthenticated, logout } = useAuth(); // Use the auth context
 
   const handleSignOut = () => {
-    logout(); 
+    logout();
   };
 
   return (
@@ -30,7 +29,6 @@ const Navbar = () => {
           )}
           <Link to="/about" className="text-gray-300 hover:text-white">About Us</Link>
           <Link to="/contacts" className="text-gray-300 hover:text-white">Contact Us</Link>
-          {/* <Link to="/admin" className="text-gray-300 hover:text-white">Admin</Link> */}
         </div>
         <div className="md:hidden">
           <button onClick={() => setIsOpen(!isOpen)} className="text-white focus:outline-none">

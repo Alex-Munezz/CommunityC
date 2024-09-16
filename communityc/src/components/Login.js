@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Database } from '@sqlitecloud/drivers';
+import { useAuth } from './AuthContext'; // Ensure the path is correct
 import '../App.css';
 
 const Login = () => {
@@ -8,9 +8,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-
-  // Database instance, specifying the database directly in the connection string
-  const db = new Database('sqlitecloud://clj1pf36iz.sqlite.cloud:8860/communityc.db?apikey=KnYAQAyLUDj36ZRvEhaBfrK52ZQwDba9YiabBQJalb8');
+  const { login } = useAuth(); // Use the auth context
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,23 +19,23 @@ const Login = () => {
     }
 
     try {
-      // Fetch user data from the database
-      const result = await db.sql`
-        SELECT * FROM user WHERE username = ${username} AND password = ${password};
-      `;
+      const response = await fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password }),
+      });
 
-      if (result.length > 0) {
-        // Simulate token generation
-        const user = result[0];
-        const accessToken = 'mock-token'; // Replace with actual token logic
+      const result = await response.json();
 
-        // Store token in localStorage or sessionStorage
-        localStorage.setItem('accessToken', accessToken);
-
-        console.log('Login successful:', user);
+      if (response.ok) {
+        const accessToken = result.token;
+        login(accessToken); // Update auth context
+        setError('');
         navigate('/'); // Redirect to home page after successful login
       } else {
-        setError('Invalid username or password.');
+        setError(result.error || 'Login failed. Please try again.');
       }
     } catch (err) {
       console.error('Error during login:', err);
@@ -73,7 +71,8 @@ const Login = () => {
           </div>
           <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
             Login
-          </button><br /><br />
+          </button>
+          <br /><br />
           <p className="text-gray-600">Don't have an account?
             <Link to='/signup' className="text-blue-500 hover:text-blue-700 font-semibold ml-1">Sign Up</Link>
           </p>
@@ -83,4 +82,4 @@ const Login = () => {
   );
 };
 
-export default Login
+export default Login;

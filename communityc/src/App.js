@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './components/LandingPage';
@@ -12,6 +12,7 @@ import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import { useAuth } from './components/AuthContext'; 
 import AdminDashboard from './components/AdminDashboard';
+import Terms from './components/Terms';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -30,6 +31,7 @@ function App() {
             <Route path="/book/:name" element={<BookingPage />} />
             <Route path="/booked-service" element={<BookedServicePage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/terms" element={<Terms />} />
           </Routes>
         </div>
         <Footer />

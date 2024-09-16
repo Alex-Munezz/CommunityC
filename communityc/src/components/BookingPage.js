@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Footer from './Footer';
-import { useNavigate } from 'react-router-dom';
 import '../App.css';
 
 const BookingPage = () => {
@@ -9,17 +8,75 @@ const BookingPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone_number: '',
     service_name: name || '',
     date: '',
     time: '',
     additionalInfo: '',
     serviceType: '',
     price: 0,
+    county: '',
+    town: '',
+    street: '',
   });
+  
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
+    const validationError = validateDateAndTime();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+  
+    const bookingData = {
+      name: formData.name,
+      email: formData.email,
+      phone_number: formData.phone_number,
+      service_name: formData.service_name,
+      date: formData.date,
+      time: formData.time,
+      additional_info: formData.additionalInfo,
+      service_difficulty: formData.serviceType,
+      price: formData.price,
+      county: formData.county,
+      town: formData.town,
+      street: formData.street,
+    };
+  
+    console.log('Booking Data:', bookingData); // Log booking data to check its content
+  
+    try {
+      const response = await fetch('http://127.0.0.1:5000/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to submit booking.');
+      }
+  
+      const price = formData.price;
+      localStorage.setItem('booking_price', price);
+      navigate('/booked-service');
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      setError('Failed to submit booking. Please try again.');
+    }
+  };
+  
 
   const [servicePricing, setServicePricing] = useState({});
   const [error, setError] = useState('');
+  const [locationFetching, setLocationFetching] = useState(false); // Track if location is being fetched
   const navigate = useNavigate();
+
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyAmecYT1TuMHh7oLlJwrvOGNh9wIUSzFxM'; // Replace with your Google Maps API key
+
   const fetchServicePricing = async () => {
     try {
       const response = await fetch(`http://127.0.0.1:5000/service-pricing?service_name=${formData.service_name}`);
@@ -46,6 +103,50 @@ const BookingPage = () => {
     }
   }, [formData.serviceType, servicePricing]);
 
+  useEffect(() => {
+    // Fetch location automatically on component mount
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          setLocationFetching(true);
+
+          try {
+            const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`);
+            const data = await response.json();
+            const addressComponents = data.results[0]?.address_components || [];
+
+            const county = addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name || '';
+            const town = addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '';
+            const street = addressComponents.find(comp => comp.types.includes('route'))?.long_name || '';
+
+            setFormData((prevData) => ({
+              ...prevData,
+              county,
+              town,
+              street,
+            }));
+          } catch (error) {
+            console.error('Error fetching address:', error);
+          } finally {
+            setLocationFetching(false);
+          }
+        },
+        (error) => {
+          console.error('Error fetching location:', error);
+          setLocationFetching(false);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+    }
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -71,30 +172,13 @@ const BookingPage = () => {
     const selectedTime = formData.time;
     const selectedHours = parseInt(selectedTime.split(':')[0], 10);
 
-    if (selectedHours < 7 || selectedHours >= 20) {
-      return 'Booking is only allowed between 7:00 AM and 8:00 PM.';
+    if (selectedHours < 7 || selectedHours >= 19) {
+      return 'Booking is only allowed between 7:00 AM and 7:00 PM.';
     }
 
     return ''; // No validation errors
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const validationError = validateDateAndTime();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    try {
-      const price = formData.price;
-      localStorage.setItem('booking_price', price);
-      navigate('/checkout');
-    } catch (error) {
-      console.error('Error setting booking price:', error);
-    }
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -132,6 +216,59 @@ const BookingPage = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
               required
+            />
+          </div>
+          <div className="mb-6">
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="phone_number">
+              Phone Number
+            </label>
+            <input
+              type="phone_number"
+              id="phone_number"
+              name="phone_number"
+              value={formData.phone_number}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+              required
+            />
+          </div>
+          <div className="mb-6">
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="county">
+              County
+            </label>
+            <input
+              type="text"
+              id="county"
+              name="county"
+              value={formData.county}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+            />
+          </div>
+          <div className="mb-6">
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="town">
+              Town
+            </label>
+            <input
+              type="text"
+              id="town"
+              name="town"
+              value={formData.town}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+            />
+          </div>
+          <div className="mb-6">
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="street">
+              Street
+            </label>
+            <input
+              type="text"
+              id="street"
+              name="street"
+              value={formData.street}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
             />
           </div>
           <div className="mb-6">
@@ -208,8 +345,8 @@ const BookingPage = () => {
             />
           </div>
           <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="additionalInfo">
-              Additional Information
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="additionalInfo">
+              Service Information
             </label>
             <textarea
               id="additionalInfo"
@@ -218,6 +355,8 @@ const BookingPage = () => {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
               rows="4"
+              required
+              placeholder='Please provide accurate and detailed information about your booking.'
             ></textarea>
           </div>
           <button
