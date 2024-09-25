@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import LandingPage from './components/LandingPage';
@@ -17,8 +17,7 @@ import Terms from './components/Terms';
 function App() {
   const { isAuthenticated } = useAuth();
   return (
-    
-      <div className="flex flex-col min-h-screen">
+     <div className="flex flex-col min-h-screen">
         <Navbar />
         <div className="flex-grow">
           <Routes>
