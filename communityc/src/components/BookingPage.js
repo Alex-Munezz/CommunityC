@@ -12,77 +12,45 @@ const BookingPage = () => {
     service_name: name || '',
     date: '',
     time: '',
-    additionalInfo: '',
-    serviceType: '',
+    additional_info: '',
+    subcategory: [], // Changed to an array for multiple selections
     price: 0,
     county: '',
     town: '',
     street: '',
   });
-  
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const [servicePricing, setServicePricing] = useState({});
+  const [subcategories, setSubcategories] = useState([]);
+  const [error, setError] = useState('');
+  const [locationFetching, setLocationFetching] = useState(false);
+  const navigate = useNavigate();
   
-    const validationError = validateDateAndTime();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-  
-    const bookingData = {
-      name: formData.name,
-      email: formData.email,
-      phone_number: formData.phone_number,
-      service_name: formData.service_name,
-      date: formData.date,
-      time: formData.time,
-      additional_info: formData.additionalInfo,
-      service_difficulty: formData.serviceType,
-      price: formData.price,
-      county: formData.county,
-      town: formData.town,
-      street: formData.street,
-    };
-  
-    console.log('Booking Data:', bookingData); // Log booking data to check its content
-  
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyAmecYT1TuMHh7oLlJwrvOGNh9wIUSzFxM';
+
+  const fetchServicePricing = async (selectedSubcategoryId) => {
     try {
-      const response = await fetch('http://127.0.0.1:5000/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(bookingData),
-      });
-  
+      const response = await fetch(`http://127.0.0.1:5000/pricing?service_id=${formData.service_name}&subcategory_id=${selectedSubcategoryId}`);
       if (!response.ok) {
-        throw new Error('Failed to submit booking.');
+        const errorData = await response.json();
+        console.error('Error fetching pricing:', errorData);
+        throw new Error('Failed to fetch pricing info');
       }
-  
-      const price = formData.price;
-      localStorage.setItem('booking_price', price);
-      navigate('/booked-service');
-    } catch (error) {
-      console.error('Error submitting booking:', error);
-      setError('Failed to submit booking. Please try again.');
+      const data = await response.json();
+      return data.price || 0; // Return the price if found
+    } catch (err) {
+      console.error(err.message);
+      return 0; // Return a default value if an error occurs
     }
   };
   
-
-  const [servicePricing, setServicePricing] = useState({});
-  const [error, setError] = useState('');
-  const [locationFetching, setLocationFetching] = useState(false); // Track if location is being fetched
-  const navigate = useNavigate();
-
-  const GOOGLE_MAPS_API_KEY = 'AIzaSyAmecYT1TuMHh7oLlJwrvOGNh9wIUSzFxM'; // Replace with your Google Maps API key
-
-  const fetchServicePricing = async () => {
+  
+  const fetchSubcategories = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/service-pricing?service_name=${formData.service_name}`);
-      if (!response.ok) throw new Error('Failed to fetch pricing info');
+      const response = await fetch(`http://127.0.0.1:5000/subcategories?service_name=${formData.service_name}`);
+      if (!response.ok) throw new Error('Failed to fetch subcategories');
       const data = await response.json();
-      setServicePricing(data);
+      setSubcategories(data);
     } catch (err) {
       console.error(err.message);
     }
@@ -90,36 +58,37 @@ const BookingPage = () => {
 
   useEffect(() => {
     if (formData.service_name) {
-      fetchServicePricing();
+      fetchSubcategories();
     }
   }, [formData.service_name]);
 
   useEffect(() => {
-    if (formData.serviceType && servicePricing[formData.serviceType]) {
-      setFormData((prevData) => ({
-        ...prevData,
-        price: servicePricing[formData.serviceType] || 0,
-      }));
-    }
-  }, [formData.serviceType, servicePricing]);
+    // Calculate total price based on selected subcategories
+    const totalPrice = formData.subcategory.reduce((total, subcatId) => {
+      return total + (servicePricing[subcatId] || 0);
+    }, 0);
+    setFormData((prevData) => ({
+      ...prevData,
+      price: totalPrice,
+    }));
+  }, [formData.subcategory, servicePricing]);
 
   useEffect(() => {
-    // Fetch location automatically on component mount
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           const { latitude, longitude } = position.coords;
           setLocationFetching(true);
-
+  
           try {
             const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`);
             const data = await response.json();
             const addressComponents = data.results[0]?.address_components || [];
-
+  
             const county = addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name || '';
             const town = addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '';
             const street = addressComponents.find(comp => comp.types.includes('route'))?.long_name || '';
-
+  
             setFormData((prevData) => ({
               ...prevData,
               county,
@@ -146,20 +115,41 @@ const BookingPage = () => {
       console.error('Geolocation is not supported by this browser.');
     }
   }, []);
+  
 
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-    setError(''); // Clear the error when form changes
+
+    if (name === 'subcategory') {
+      const selectedValue = value;
+      // Toggle the subcategory selection
+      setFormData((prevData) => {
+        const updatedSubcategory = prevData.subcategory.includes(selectedValue)
+          ? prevData.subcategory.filter((id) => id !== selectedValue) // Remove if already selected
+          : [...prevData.subcategory, selectedValue]; // Add if not selected
+
+        return { ...prevData, subcategory: updatedSubcategory };
+      });
+
+      // Fetch pricing for the selected subcategory
+      const price = await fetchServicePricing(selectedValue); // Assuming 'value' is the selected subcategory ID
+      setServicePricing((prevPricing) => ({
+        ...prevPricing,
+        [selectedValue]: price, // Update the service pricing for the selected subcategory
+      }));
+
+    } else {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]: value,
+      }));
+    }
   };
 
   const validateDateAndTime = () => {
     const selectedDate = new Date(formData.date);
     const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset today's time to 00:00:00
+    today.setHours(0, 0, 0, 0);
 
     if (selectedDate < today) {
       return 'You cannot book a past date.';
@@ -176,9 +166,55 @@ const BookingPage = () => {
       return 'Booking is only allowed between 7:00 AM and 7:00 PM.';
     }
 
-    return ''; // No validation errors
+    return '';
   };
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const validationError = validateDateAndTime();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const bookingData = {
+      name: formData.name,
+      email: formData.email,
+      phone_number: formData.phone_number,
+      service_name: formData.service_name,
+      date: formData.date,
+      time: formData.time,
+      additional_info: formData.additional_info,
+      subcategory: formData.subcategory, // Updated to subcategory
+      price: formData.price,
+      county: formData.county,
+      town: formData.town,
+      street: formData.street,
+    };
+
+    console.log('Booking Data:', bookingData);
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit booking.');
+      }
+
+      localStorage.setItem('booking_price', formData.price);
+      navigate('/booked-service');
+    } catch (error) {
+      console.error('Error submitting booking:', error);
+      setError('Failed to submit booking. Please try again.');
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -223,7 +259,7 @@ const BookingPage = () => {
               Phone Number
             </label>
             <input
-              type="phone_number"
+              type="tel"
               id="phone_number"
               name="phone_number"
               value={formData.phone_number}
@@ -243,48 +279,31 @@ const BookingPage = () => {
               value={formData.county}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="town">
-              Town
-            </label>
-            <input
-              type="text"
-              id="town"
-              name="town"
-              value={formData.town}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="street">
-              Street
-            </label>
-            <input
-              type="text"
-              id="street"
-              name="street"
-              value={formData.street}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="service_name">
-              Service Name
-            </label>
-            <input
-              type="text"
-              id="service_name"
-              name="service_name"
-              value={formData.service_name}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
               required
             />
           </div>
+            <div className="mb-6">
+              <label className="required block text-gray-700 text-sm font-semibold mb-1">Town</label>
+              <input
+                type="text"
+                id="town"
+                name="town"
+                value={formData.town}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+              />
+            </div>
+            <div className="mb-6">
+              <label className="required block text-gray-700 text-sm font-semibold mb-1">Street</label>
+              <input
+                type="text"
+                id="street"
+                name="street"
+                value={formData.street}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+              />
+            </div>
           <div className="mb-6">
             <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="date">
               Date
@@ -314,54 +333,64 @@ const BookingPage = () => {
             />
           </div>
           <div className="mb-6">
-            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="serviceType">
-              Service Difficulty
-            </label>
-            <select
-              id="serviceType"
-              name="serviceType"
-              value={formData.serviceType}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-              required
-            >
-              <option value="" disabled>Select Service Difficulty</option>
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="hard">Hard/Complex</option>
-            </select>
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-semibold mb-2" htmlFor="price">
-              Price (in Kshs)
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="service name">
+              Service Name
             </label>
             <input
               type="text"
-              id="price"
-              name="price"
-              value={`${formData.price.toFixed(2)}`}
+              id="service name"
+              name="service name"
+              value={formData.service_name}
               readOnly
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-100"
+              onChange={handleChange}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+              required
             />
           </div>
           <div className="mb-6">
-            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="additionalInfo">
-              Service Information
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="subcategory">
+              Select Subcategories (Please select categories related to your service ONLY!!)
             </label>
-            <textarea
-              id="additionalInfo"
-              name="additionalInfo"
-              value={formData.additionalInfo}
+            <select
+              id="subcategory"
+              name="subcategory"
+              multiple
+              value={formData.subcategory}
               onChange={handleChange}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-              rows="4"
+            >
+              {subcategories.map((subcat) => (
+                <option key={subcat.name} value={subcat.name}>
+                  {subcat.name}
+                </option>
+              ))}
+            </select>
+            <div className="mt-2 text-gray-600">
+              Selected: {formData.subcategory.join(', ')}
+            </div>
+          </div>
+          <div className="mb-6">
+            <label className="required block text-gray-700 text-sm font-semibold mb-2" htmlFor="additionalInfo">
+              Additional Information ( Please explain service needed in detail )
+            </label>
+            <textarea
+              id="additional_info"
+              name="additional_info"
+              value={formData.additional_info}
+              onChange={handleChange}
+              rows="3"
               required
-              placeholder='Please provide accurate and detailed information about your booking.'
-            ></textarea>
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block text-gray-700 text-xl font-semibold mb-2" htmlFor="price">
+              Total Price: {formData.price} Ksh
+            </label>
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-3 rounded-lg shadow-lg hover:bg-blue-600 transition duration-300"
+            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
           >
             Book Service
           </button>
@@ -373,3 +402,4 @@ const BookingPage = () => {
 };
 
 export default BookingPage;
+
