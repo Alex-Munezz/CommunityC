@@ -40,3 +40,16 @@
   content: " *";
   color: red;
 }
+.loader {
+  border: 4px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  border-top:40vh solid white;
+  width: 20px;
+  height: 20px;
+  animation: spin 4s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

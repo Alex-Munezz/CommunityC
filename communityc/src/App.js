@@ -12,6 +12,7 @@ import AboutUs from './components/AboutUs';
 import ContactUs from './components/ContactUs';
 import { useAuth } from './components/AuthContext'; 
 import AdminDashboard from './components/AdminDashboard';
+import UserDashboard from './components/UserDashboard';
 import Terms from './components/Terms';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
             <Route path="/book/:name" element={<BookingPage />} />
             <Route path="/booked-service" element={<BookedServicePage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
             <Route path="/terms" element={<Terms />} />
           </Routes>
         </div>

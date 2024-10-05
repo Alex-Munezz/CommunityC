@@ -5,41 +5,47 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [tokenExpiry, setTokenExpiry] = useState(null); // Track token expiry
+  const [tokenExpiry, setTokenExpiry] = useState(null); 
   const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    console.log('Retrieved token:', token);
     const expiry = localStorage.getItem('token_expiry');
-    
+    console.log('Retrieved token:', token);
+    console.log('Token expiry time from localStorage:', expiry);
+  
     if (token && expiry && new Date(expiry) > new Date()) {
       setIsAuthenticated(true);
+      setTokenExpiry(expiry); 
     } else {
-      logout(); // If token is expired, log out the user
+      logout();
     }
   }, []);
+  
 
   useEffect(() => {
-    // Automatically log out the user if token expires
     if (isAuthenticated && tokenExpiry) {
       const interval = setInterval(() => {
         if (new Date() > new Date(tokenExpiry)) {
           logout();
         }
-      }, 1000); // Check every second
+      }, 1000);
 
-      return () => clearInterval(interval); // Cleanup interval on component unmount
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated, tokenExpiry]);
 
   const login = (token) => {
-    const expiryTime = new Date(new Date().getTime() + 30 * 60 * 1000); 
+    const expiryTime = new Date(new Date().getTime() + 30 * 60 * 1000);
+    console.log('Storing token:', token);
+    console.log('Token expiry time:', expiryTime);
+  
     localStorage.setItem('access_token', token);
-    localStorage.setItem('token_expiry', expiryTime.toISOString()); // Store expiration time
+    localStorage.setItem('token_expiry', expiryTime.toISOString());
     setIsAuthenticated(true);
-    setTokenExpiry(expiryTime);
+    setTokenExpiry(expiryTime.toISOString());
   };
+  
 
   const logout = () => {
     localStorage.removeItem('access_token');
@@ -49,7 +55,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, tokenExpiry, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

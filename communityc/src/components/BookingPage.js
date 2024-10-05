@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode'; // To decode the token
 import Footer from './Footer';
 import '../App.css';
 
@@ -19,17 +20,35 @@ const BookingPage = () => {
     town: '',
     street: '',
   });
-
+  const [loading, setLoading] = useState(false);
   const [servicePricing, setServicePricing] = useState({});
   const [subcategories, setSubcategories] = useState([]);
   const [error, setError] = useState('');
   const [locationFetching, setLocationFetching] = useState(false);
   const navigate = useNavigate();
+  const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+
+  // Fetch user ID from access token
+  const getUserIdFromToken = () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) throw new Error('No token found');
+      
+      const decodedToken = jwtDecode(token);
+      console.log('Decoded Token:', decodedToken);
+      
+      return decodedToken.sub;  // Use 'sub' as the user ID
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return null;
+    }
+  };
+    
   
-  const GOOGLE_MAPS_API_KEY = 'AIzaSyAmecYT1TuMHh7oLlJwrvOGNh9wIUSzFxM';
 
   const fetchServicePricing = async (selectedSubcategoryId) => {
     try {
+      setLoading(true);
       const response = await fetch(`http://127.0.0.1:5000/pricing?service_id=${formData.service_name}&subcategory_id=${selectedSubcategoryId}`);
       if (!response.ok) {
         const errorData = await response.json();
@@ -37,22 +56,26 @@ const BookingPage = () => {
         throw new Error('Failed to fetch pricing info');
       }
       const data = await response.json();
-      return data.price || 0; // Return the price if found
+      return data.price || 0;
     } catch (err) {
       console.error(err.message);
-      return 0; // Return a default value if an error occurs
+      return 0;
+    } finally {
+      setLoading(false);
     }
   };
-  
-  
+
   const fetchSubcategories = async () => {
     try {
+      setLoading(true);
       const response = await fetch(`http://127.0.0.1:5000/subcategories?service_name=${formData.service_name}`);
       if (!response.ok) throw new Error('Failed to fetch subcategories');
       const data = await response.json();
       setSubcategories(data);
     } catch (err) {
       console.error(err.message);
+    }finally {
+      setLoading(false);
     }
   };
 
@@ -63,7 +86,6 @@ const BookingPage = () => {
   }, [formData.service_name]);
 
   useEffect(() => {
-    // Calculate total price based on selected subcategories
     const totalPrice = formData.subcategory.reduce((total, subcatId) => {
       return total + (servicePricing[subcatId] || 0);
     }, 0);
@@ -79,16 +101,16 @@ const BookingPage = () => {
         async (position) => {
           const { latitude, longitude } = position.coords;
           setLocationFetching(true);
-  
+
           try {
             const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`);
             const data = await response.json();
             const addressComponents = data.results[0]?.address_components || [];
-  
+
             const county = addressComponents.find(comp => comp.types.includes('administrative_area_level_2'))?.long_name || '';
             const town = addressComponents.find(comp => comp.types.includes('locality'))?.long_name || '';
             const street = addressComponents.find(comp => comp.types.includes('route'))?.long_name || '';
-  
+
             setFormData((prevData) => ({
               ...prevData,
               county,
@@ -115,29 +137,25 @@ const BookingPage = () => {
       console.error('Geolocation is not supported by this browser.');
     }
   }, []);
-  
 
   const handleChange = async (e) => {
     const { name, value } = e.target;
 
     if (name === 'subcategory') {
       const selectedValue = value;
-      // Toggle the subcategory selection
       setFormData((prevData) => {
         const updatedSubcategory = prevData.subcategory.includes(selectedValue)
-          ? prevData.subcategory.filter((id) => id !== selectedValue) // Remove if already selected
-          : [...prevData.subcategory, selectedValue]; // Add if not selected
+          ? prevData.subcategory.filter((id) => id !== selectedValue)
+          : [...prevData.subcategory, selectedValue];
 
         return { ...prevData, subcategory: updatedSubcategory };
       });
 
-      // Fetch pricing for the selected subcategory
-      const price = await fetchServicePricing(selectedValue); // Assuming 'value' is the selected subcategory ID
+      const price = await fetchServicePricing(selectedValue);
       setServicePricing((prevPricing) => ({
         ...prevPricing,
-        [selectedValue]: price, // Update the service pricing for the selected subcategory
+        [selectedValue]: price,
       }));
-
     } else {
       setFormData((prevData) => ({
         ...prevData,
@@ -171,14 +189,23 @@ const BookingPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     const validationError = validateDateAndTime();
     if (validationError) {
       setError(validationError);
       return;
     }
-
+  
+    const user_id = getUserIdFromToken();
+    if (!user_id) {
+      setError('User ID not found. Please log in again.');
+      setLoading(false);
+      return;
+    }
+  
     const bookingData = {
+      user_id,
       name: formData.name,
       email: formData.email,
       phone_number: formData.phone_number,
@@ -186,39 +213,49 @@ const BookingPage = () => {
       date: formData.date,
       time: formData.time,
       additional_info: formData.additional_info,
-      subcategory: formData.subcategory, // Updated to subcategory
+      subcategory: formData.subcategory,
       price: formData.price,
       county: formData.county,
       town: formData.town,
       street: formData.street,
     };
-
-    console.log('Booking Data:', bookingData);
-
+  
     try {
+      const token = localStorage.getItem('access_token');
       const response = await fetch('http://127.0.0.1:5000/bookings', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Pass token in header
         },
         body: JSON.stringify(bookingData),
       });
-
+  
       if (!response.ok) {
         throw new Error('Failed to submit booking.');
       }
-
+  
       localStorage.setItem('booking_price', formData.price);
       navigate('/booked-service');
     } catch (error) {
       console.error('Error submitting booking:', error);
       setError('Failed to submit booking. Please try again.');
+    } finally {
+      setLoading(false); // Stop loading
     }
   };
+  
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <div className="flex-grow container mx-auto px-4 py-8">
+      {loading && (
+          <div className="flex justify-center items-center">
+            <div className="loader">Loading...</div>
+          </div>
+        )}
+        {!loading && (
+          <>
         <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Book {formData.service_name}</h1>
         <form className="max-w-lg mx-auto bg-white p-8 rounded-lg shadow-lg border border-gray-200" onSubmit={handleSubmit}>
           {error && (
@@ -389,12 +426,25 @@ const BookingPage = () => {
             </label>
           </div>
           <button
-            type="submit"
-            className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
-          >
-            Book Service
-          </button>
+  type="submit"
+  disabled={loading} // Disable button while loading
+  className={`w-full py-3 text-white font-semibold rounded-lg shadow-md transition duration-300 ${
+    loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+  }`}
+>
+  {loading ? (
+    <div className="flex items-center justify-center">
+      <span className="loader mr-2">Loading...</span> {/* Loader component or text */}
+      Booking...
+    </div>
+  ) : (
+    'Book Service'
+  )}
+</button>
+
         </form>
+        </>
+        )}
       </div>
       <Footer />
     </div>

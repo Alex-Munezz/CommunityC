@@ -10,36 +10,36 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth(); // Use the auth context
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!username || !password) {
-      setError('Please fill in all fields.');
-      return;
-    }
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/login', {
+      const response = await fetch('http://127.0.0.1:5000/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
       });
 
-      const result = await response.json();
-
       if (response.ok) {
-        const accessToken = result.token;
-        login(accessToken); // Update auth context
-        setError('');
-        navigate('/'); // Redirect to home page after successful login
+        const data = await response.json();
+        console.log('Login response:', data);
+
+        if (data.access_token) {
+          console.log('Token received:', data.access_token);
+          // Save both token and role via the login function
+          login(data.access_token);
+          navigate('/'); // Navigate to the dashboard or another page
+        } else {
+          setError('Login failed. No access token received.');
+          console.error('Access token is missing in the response');
+        }
       } else {
-        setError(result.error || 'Login failed. Please try again.');
+        setError('Login failed. Please check your credentials.');
+        console.error('Login failed:', response.statusText);
       }
-    } catch (err) {
-      console.error('Error during login:', err);
+    } catch (error) {
       setError('An error occurred. Please try again.');
+      console.error('Error during login:', error);
     }
   };
 

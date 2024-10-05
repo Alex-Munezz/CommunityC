@@ -15,9 +15,28 @@ const ContactUs = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Thank you for contacting us! We will get back to you shortly.');
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert('Thank you for contacting us! We will get back to you shortly.');
+        setFormData({ name: '', email: '', subject: '', message: '' }); // Reset form
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.error}`);
+      }
+    } catch (error) {
+      alert('An error occurred. Please try again later.');
+    }
   };
 
   return (
@@ -32,7 +51,7 @@ const ContactUs = () => {
           You can also contact us through the following methods:
         </p>
         <ul className="list-disc list-inside text-gray-700 mb-4">
-          <li>Email: <a href="mailto:support@communiycrafters.com" className="text-blue-500 hover:underline">support@communitycrafters.com</a></li>
+          <li>Email: <a href="mailto:support@communitycrafters.com" className="text-blue-500 hover:underline">bookings.communitycrafters@gmail.com</a></li>
           <li>Phone: <a href="tel:+254768453442" className="text-blue-500 hover:underline">+254768453442</a></li>
         </ul>
       </section>
