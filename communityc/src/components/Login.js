@@ -22,10 +22,8 @@ const Login = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Login response:', data);
 
         if (data.access_token) {
-          console.log('Token received:', data.access_token);
           // Save both token and role via the login function
           login(data.access_token);
           navigate('/'); // Navigate to the dashboard or another page

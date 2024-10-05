@@ -49,8 +49,6 @@ const UserDashboard = () => {
                 }
             }); 
             
-            console.log('Bookings response status:', response.status); // Log response status
-            
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Fetch user bookings error:', errorData); // Log error details
@@ -58,7 +56,6 @@ const UserDashboard = () => {
             }
     
             const data = await response.json();
-            console.log('Bookings response data:', data); // Log response data
             setBookings(data.bookings || []); // Assuming data.bookings is the correct structure
         } catch (error) {
             console.error('Fetch user bookings error:', error);

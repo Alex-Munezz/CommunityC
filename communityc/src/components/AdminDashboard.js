@@ -9,19 +9,16 @@ const AdminDashboard = () => {
     const [showFeedback, setShowFeedback] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [updatedData, setUpdatedData] = useState({});
-
+    const [showProviders, setShowProviders] = useState(false);
+    const [serviceProviders, setServiceProviders] = useState([]);
+    
     useEffect(() => {
         const fetchBookings = async () => {
             try {
                 const response = await fetch('http://127.0.0.1:5000/bookings');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
-                if (Array.isArray(data.bookings)) {
-                    setBookings(data.bookings);
-                } else {
-                    console.error('Fetched data is not an array:', data.bookings);
-                    setBookings([]);
-                }
+                setBookings(Array.isArray(data.bookings) ? data.bookings : []);
             } catch (error) {
                 console.error('Fetch bookings error:', error);
             }
@@ -40,7 +37,7 @@ const AdminDashboard = () => {
 
         const fetchFeedback = async () => {
             try {
-                const response = await fetch('http://127.0.0.1:5000/feedback'); // Fetch feedback data
+                const response = await fetch('http://127.0.0.1:5000/feedback');
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
                 setFeedback(data);
@@ -49,9 +46,22 @@ const AdminDashboard = () => {
             }
         };
 
+        const fetchServiceProviders = async () => {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/service-providers');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+                setServiceProviders(data); // Set the service providers data
+            } catch (error) {
+                console.error('Fetch service providers error:', error);
+            }
+        };
+
+        // Fetch data when component mounts
         fetchBookings();
         fetchUsers();
-        fetchFeedback(); // Fetch feedback on component mount
+        fetchFeedback();
+        fetchServiceProviders();
     }, []);
 
     const handleDeleteBooking = async (bookingId) => {
@@ -101,6 +111,8 @@ const AdminDashboard = () => {
         }));
     };
 
+    
+
     return (
         <div className="p-6 bg-gray-100 min-h-screen">
             <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
@@ -141,10 +153,34 @@ const AdminDashboard = () => {
                             {showFeedback ? 'Hide Feedback' : 'View Feedback'}
                         </button>
                     </div>
+                    {/* Service Providers Card */}
+                 <div className="bg-white p-6 rounded-lg shadow-md">
+                    <h3 className="text-xl font-bold">Total Service Providers</h3>
+                    <p className="text-lg">{serviceProviders.length}</p>
+                    <button onClick={() => setShowProviders(!showProviders)} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        {showProviders ? 'Hide Providers' : 'View Providers'}
+                    </button>
+                </div>
                 </div>
             </section>
 
             {/* Bookings List */}
+            {showProviders && (
+                <section className="mb-6">
+                    <h2 className="text-2xl font-semibold mb-4">All Service Providers</h2>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {serviceProviders.map(provider => (
+                            <div key={provider.id} className="bg-white p-4 rounded-lg shadow-md">
+                                <div className="text-lg font-semibold">Provider Name: {provider.name}</div>
+                                <div>Email: {provider.email}</div>
+                                <div>Phone: {provider.phone_number}</div>
+                                <div>Service ID: {provider.service_id}</div>
+                                <div>Provider Location: {provider.location} </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
             {showBookings && (
                 <section className="mb-6">
                     <h2 className="text-2xl font-semibold mb-4">All Bookings</h2>

@@ -11,8 +11,6 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const expiry = localStorage.getItem('token_expiry');
-    console.log('Retrieved token:', token);
-    console.log('Token expiry time from localStorage:', expiry);
   
     if (token && expiry && new Date(expiry) > new Date()) {
       setIsAuthenticated(true);
@@ -37,8 +35,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = (token) => {
     const expiryTime = new Date(new Date().getTime() + 30 * 60 * 1000);
-    console.log('Storing token:', token);
-    console.log('Token expiry time:', expiryTime);
   
     localStorage.setItem('access_token', token);
     localStorage.setItem('token_expiry', expiryTime.toISOString());

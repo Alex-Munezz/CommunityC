@@ -49,7 +49,6 @@ const SignUp = () => {
       });
 
       if (response.ok) {
-        console.log('Sign-up successful');
         setError('');
         navigate('/login'); // Redirect to login page after successful sign-up
       } else {

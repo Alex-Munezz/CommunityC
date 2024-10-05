@@ -35,9 +35,8 @@ const BookingPage = () => {
       if (!token) throw new Error('No token found');
       
       const decodedToken = jwtDecode(token);
-      console.log('Decoded Token:', decodedToken);
       
-      return decodedToken.sub;  // Use 'sub' as the user ID
+      return decodedToken.sub; 
     } catch (error) {
       console.error('Error decoding token:', error);
       return null;
@@ -142,27 +141,28 @@ const BookingPage = () => {
     const { name, value } = e.target;
 
     if (name === 'subcategory') {
-      const selectedValue = value;
-      setFormData((prevData) => {
-        const updatedSubcategory = prevData.subcategory.includes(selectedValue)
-          ? prevData.subcategory.filter((id) => id !== selectedValue)
-          : [...prevData.subcategory, selectedValue];
+        const selectedValue = value;
+        setFormData((prevData) => {
+            const updatedSubcategory = prevData.subcategory.includes(selectedValue)
+                ? prevData.subcategory.filter((id) => id !== selectedValue)
+                : [...prevData.subcategory, selectedValue];
 
-        return { ...prevData, subcategory: updatedSubcategory };
-      });
+            return { ...prevData, subcategory: updatedSubcategory };
+        });
 
-      const price = await fetchServicePricing(selectedValue);
-      setServicePricing((prevPricing) => ({
-        ...prevPricing,
-        [selectedValue]: price,
-      }));
+        const price = await fetchServicePricing(selectedValue);
+        setServicePricing((prevPricing) => ({
+            ...prevPricing,
+            [selectedValue]: parseFloat(price), // Ensure price is a number
+        }));
     } else {
-      setFormData((prevData) => ({
-        ...prevData,
-        [name]: value,
-      }));
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value,
+        }));
     }
-  };
+};
+
 
   const validateDateAndTime = () => {
     const selectedDate = new Date(formData.date);
@@ -197,15 +197,7 @@ const BookingPage = () => {
       return;
     }
   
-    const user_id = getUserIdFromToken();
-    if (!user_id) {
-      setError('User ID not found. Please log in again.');
-      setLoading(false);
-      return;
-    }
-  
     const bookingData = {
-      user_id,
       name: formData.name,
       email: formData.email,
       phone_number: formData.phone_number,
@@ -213,7 +205,7 @@ const BookingPage = () => {
       date: formData.date,
       time: formData.time,
       additional_info: formData.additional_info,
-      subcategory: formData.subcategory,
+      subcategory: formData.subcategory.join(','),
       price: formData.price,
       county: formData.county,
       town: formData.town,
@@ -222,6 +214,10 @@ const BookingPage = () => {
   
     try {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('User not authenticated');
+        return;
+    }
       const response = await fetch('http://127.0.0.1:5000/bookings', {
         method: 'POST',
         headers: {
@@ -241,7 +237,7 @@ const BookingPage = () => {
       console.error('Error submitting booking:', error);
       setError('Failed to submit booking. Please try again.');
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false); 
     }
   };
   
@@ -434,7 +430,7 @@ const BookingPage = () => {
 >
   {loading ? (
     <div className="flex items-center justify-center">
-      <span className="loader mr-2">Loading...</span> {/* Loader component or text */}
+      <span className="loader mr-2">Loading...</span> 
       Booking...
     </div>
   ) : (
