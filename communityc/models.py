@@ -1,0 +1,117 @@
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
+
+db = SQLAlchemy()
+
+class User(db.Model):
+    __tablename__ = 'user'
+    id = db.Column(db.Integer, primary_key=True)
+    fullname = db.Column(db.String(80), nullable=False)
+    password = db.Column(db.String(128), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    phone_number = db.Column(db.String(15), unique=True, nullable=False) 
+    role = db.Column(db.String(10), nullable=False, default='customer')
+
+class Service(db.Model):
+    __tablename__ = 'service'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    image = db.Column(db.String(20055), nullable=False) 
+    category = db.Column(db.String(100), nullable=False)
+
+    subcategories = db.relationship('Subcategory', backref='service', lazy=True)
+    providers = db.relationship('ServiceProvider', backref='service', lazy=True)
+
+    def __repr__(self):
+        return f'<Service {self.name}>'
+
+class Subcategory(db.Model):
+    __tablename__ = 'subcategory'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
+
+    def __repr__(self):
+        return f'<Subcategory {self.name}>'
+
+class ServiceProvider(db.Model):
+    __tablename__ = 'service_providers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(15), nullable=False)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
+
+class Pricing(db.Model):
+    __tablename__ = 'pricing'
+    id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('subcategory.id'), nullable=False)
+    price = db.Column(db.Numeric(10, 2), nullable=False)  # Using Numeric for precision
+
+    subcategory = db.relationship('Subcategory', backref='pricing')
+
+    def __repr__(self):
+        return f'<Pricing {self.price} for subcategory {self.subcategory.name}>'
+
+class Feedback(db.Model):
+    __tablename__ = 'feedback'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    subject = db.Column(db.String(200), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+
+    def __repr__(self):
+        return f'<Feedback {self.name}>'
+
+class Booking(db.Model):
+    __tablename__ = 'booking'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    service_name = db.Column(db.String(100), nullable=False)  
+    name = db.Column(db.String(80), nullable=False)
+    email = db.Column(db.String(120), nullable=False)
+    phone_number = db.Column(db.String(15), nullable=False)
+    location = db.Column(db.String(100), nullable=True)
+    date = db.Column(db.String(10), nullable=False)
+    time = db.Column(db.String(5), nullable=False)
+    subcategory = db.Column(db.String(100), nullable=False)
+    price = db.Column(db.String(10), nullable=False)
+    additional_info = db.Column(db.String(200))
+
+    # Adding user_id to link booking to user
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Assuming the User model has an id field
+
+    # Optional: Establish relationship with User model
+    user = db.relationship('User', backref='bookings')  # Assuming you have a User model
+
+
+class Review(db.Model):
+    __tablename__ ='review'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    provider_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text)
+
+    user = db.relationship('User', foreign_keys=[user_id])
+    provider = db.relationship('User', foreign_keys=[provider_id])
+    service = db.relationship('Service')
+
+class Payment(db.Model):
+    __tablename__='payment'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)  # Using Numeric for precision
+    status = db.Column(db.String(20), nullable=False, default='pending')
+    transaction_id = db.Column(db.String(100), unique=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+
+    user = db.relationship('User')
+    booking = db.relationship('Booking')
